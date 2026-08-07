@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "skills": {
+    "avian": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/avian/SKILL.md",
+      "computedHash": "789d2abbe0ce4d690e1e96707a1690ea97d20f670dbb365759c9667ca7b9e3c5"
+    },
+    "bevy-assets": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-assets/SKILL.md",
+      "computedHash": "036f2b83dd4a3d68a5ef97084faa6578e15fd11bc2383e5cfe21a4faa17e6ebd"
+    },
+    "bevy-audio": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-audio/SKILL.md",
+      "computedHash": "f6a3934061e7c90d6d443e920c04838743aeee3810cc266a95b9ac0fd36b00a2"
+    },
+    "bevy-bsn": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-bsn/SKILL.md",
+      "computedHash": "d812f7ca64629fb43ca238b3c0664bbde35af66c50c4ab04d0e864d5add6f7da"
+    },
+    "bevy-cameras": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-cameras/SKILL.md",
+      "computedHash": "f95a65b7ca7127d954d13a5c95095290e2178938a6cceccd2498243a06cdb9ef"
+    },
+    "bevy-commands": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-commands/SKILL.md",
+      "computedHash": "d04f9b2b86dab206a59dba192a62804d2e92d4c3f567671f47141a0c03f973c8"
+    },
+    "bevy-enhanced-input": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-enhanced-input/SKILL.md",
+      "computedHash": "e1008a2af19fe43759f932640e76194a4d236d52e4c1e79dbc563e3de7938d91"
+    },
+    "bevy-events": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-events/SKILL.md",
+      "computedHash": "361eb005a3bf039f515a249e6ee4b3e23d37dff9109e0e2aa54a97f7ddcc31ef"
+    },
+    "bevy-gizmos": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-gizmos/SKILL.md",
+      "computedHash": "05ad1ae6782a8617db72a15579d9094a3e0b41f40ab16b60cafa63acb92d1561"
+    },
+    "bevy-input": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-input/SKILL.md",
+      "computedHash": "8c02ec3a55655c39b247c0535c8c96e7dce47c42d20c4bb8b4d2d98639788069"
+    },
+    "bevy-picking": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-picking/SKILL.md",
+      "computedHash": "e3a51149536b4b175d8f5018a8ec9120d3e9c8e67fd1a1f494e3aeb212f5c669"
+    },
+    "bevy-plugins": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-plugins/SKILL.md",
+      "computedHash": "f4f07dfac850cbbd62c3392959c1fd4ad0ae57f461c8f3cbbaf790804de03f7c"
+    },
+    "bevy-queries": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-queries/SKILL.md",
+      "computedHash": "1291817d84aad7e2862dc23695582b4f91af58ed6e47bce8c75e15485790ab99"
+    },
+    "bevy-reflection": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-reflection/SKILL.md",
+      "computedHash": "1d36170e6353b9ee3c4d66b5b81255fa1c5ca1a822e11a5e23c580d4429867cc"
+    },
+    "bevy-relationships": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-relationships/SKILL.md",
+      "computedHash": "d5ec4863f1ac3382a3e21276d9d205a9f4f8f372ed1eab46d80f6837a9e350c0"
+    },
+    "bevy-rendering": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-rendering/SKILL.md",
+      "computedHash": "7ba0afef44204d7f217a0c50ab1e914c4e5ce5f90edd35a9705381c839393ed9"
+    },
+    "bevy-resources": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-resources/SKILL.md",
+      "computedHash": "3da7535cbd217e5f581404655ad116e03da18ac6010b2a3f407dafdb9e928b7a"
+    },
+    "bevy-scenes": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-scenes/SKILL.md",
+      "computedHash": "0d85683102fa9edc33fc8cfc02df641d73d5bf73538f028d6b6f807be424c7e4"
+    },
+    "bevy-sprites": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-sprites/SKILL.md",
+      "computedHash": "c2fcfadd172a527dbbb0c7d95430309723ce800da0b7e7f3b9ab28378f840ac8"
+    },
+    "bevy-systems": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-systems/SKILL.md",
+      "computedHash": "e8bec3a63a9bd010665f21aa2d6c49d4364963638b9502203f3d8e675cabcda7"
+    },
+    "bevy-text": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-text/SKILL.md",
+      "computedHash": "9b854adee68be99e52546a509b4aede3ca618c93d8e04a604de0016b8bd60333"
+    },
+    "bevy-timers": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-timers/SKILL.md",
+      "computedHash": "1a0fbd3999f76e0eab73cd51074aebea941c074e61aed53efd5a3b9d6ffe4d08"
+    },
+    "bevy-ui": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-ui/SKILL.md",
+      "computedHash": "e0d989d707dab6ba3cc373da5f1ecb53bb74339585f5873401db35adeb95cae8"
+    },
+    "bevy-windows": {
+      "source": "nolantait/bevy-starter",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/bevy-windows/SKILL.md",
+      "computedHash": "071c51f0be33e1c3b43498ecf1440010478c38826c4433e7a7c5e661d796bd04"
+    }
+  }
+}

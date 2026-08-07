@@ -2,4 +2,4 @@
 channel = "nightly"
 # Removed for now until fixed in MacOS
 # @see https://github.com/bevyengine/bevy/issues/20785
-# components = ["rustc-codegen-cranelift-preview"]
+components = ["rustc-codegen-cranelift-preview"]
