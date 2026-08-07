@@ -17,11 +17,7 @@ You can build your game
 cargo run
 ```
 
-If you want the extra dev features then you can toggle them:
-
-```
-cargo run --features dev
-```
+Native development features are enabled by default.
 
 Depending on if you are building a 2D or 3D game you can set your Bevy features
 accordingly in `Cargo.toml` to reduce compile times. For 2D games you can use:

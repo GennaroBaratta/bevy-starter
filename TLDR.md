@@ -317,7 +317,7 @@ impl Plugin for CameraPlugin {
 }
 
 fn main() {
-  App::new().add_plugins(plugin).run();
+  App::new().add_plugins(CameraPlugin).run();
 }
 ```
 
@@ -353,17 +353,17 @@ Query<&Transform, With<Player>>
 Query<&mut Transform, (With<Player>, With<Living>)>
 ```
 
-When one of the generic parameters is a tuple then ___all___ the types in that
-tuple must be satisfied by that query.
+Query-data tuples require every non-optional item. Query-filter tuples apply
+every filter.
 
 There are convenient types that make expressing more complicated queries easier:
 
 |parameter|description|
 |---------|-----------|
-|`Option<T>`|a component but only if it exists, otherwise `None`|
+|`Option<D>`|optional query data; does not require `D` to match|
 |`AnyOf<T>`|fetches entities with any of the components in type T|
 |`Ref<T>`|shared borrow of an entity's component `T` with access to change detection|
-|`Has<T>`|Returns a bool that describes if an entity has the component `T`|
+|`Has<T>`|returns whether the entity has `T`; does not filter entities|
 |`Entity`|returns the entity|
 
 In addition to the `Query` system parameter there are other sibling system
@@ -394,31 +394,28 @@ are wrapped by a condition type:
 |------|-----------|
 |`With<T>`|only items with a `T` component|
 |`Without<T>`|only items without a `T` component|
-|`Or<F>`|checks if all filters in the tuple `F` apply|
-|`Changed<T>`|only components of type `T` that were changed this tick|
-|`Added<T>`|only components of type `T` that were added this tick|
+|`Or<F>`|checks if any filter in the tuple `F` applies|
+|`Changed<T>`|components marked changed since this system last ran|
+|`Added<T>`|components added since this system last ran|
 
 To retrieve components from our ECS storage our `Query` system parameter
 provides an API with the following methods:
 
 |method|description|
 |------|-----------|
-|`iter`|returns an iterator over all items|
-|`for_each`|runs the given function in parallel for each item|
-|`iter_many`|runs a given function for each item matching a list of entities|
-|`iter_combinations`|returns an iterator over all combinations of a specified number of items|
-|`par_iter`|returns a parallel iterator|
-|`get`|returns a query item for a given entity|
-|`get_component<T>`|returns the component for a given entity|
-|`many`|returns a query item for a given list of entities|
-|`get_single`|the safe version of `single` which returns a `Result<T>`|
-|`single`|returns the query item while panicking if there are others|
+|`iter` / `iter_mut`|returns an iterator over all items|
+|`iter().for_each`|runs a sequential iterator closure|
+|`iter_many` / `iter_many_mut`|returns an iterator over items matching a list of entities|
+|`iter_combinations` / `iter_combinations_mut`|iterates over combinations of a specified size|
+|`par_iter` / `par_iter_mut`|runs a closure in parallel over items|
+|`get` / `get_mut`|returns a query item for a given entity|
+|`get_many` / `get_many_mut`|returns items for a fixed array of entities as a `Result`|
+|`single` / `single_mut`|returns exactly one query item as a `Result`|
 |`is_empty`|returns true if the query is empty|
 |`contains`|returns true if query contains a given entity|
 
-Each method also has a corresponding `*_mut` variant which will return the
-components with mutable ownership. This lets us change their data, instead of
-just reading it.
+Methods that yield query data generally have a `*_mut` variant which can return
+mutable references. Inspection methods such as `is_empty` and `contains` do not.
 
 In situations where we have a particular `Entity` (which is basically an ID),
 we can use `get` or `get_mut`.
@@ -1597,7 +1594,7 @@ fn car_with_config(config: CarConfig) -> impl Scene {
 }
 ```
 
-BSN supports [relationships](/bevy/relationships)
+BSN supports [relationships](#relationships)
 
 ```rust
 fn spawn_scene(mut commands: Commands) {
