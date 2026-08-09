@@ -8,6 +8,7 @@ const ATLAS_ROWS: usize = 54;
 const WALK_FRAMES: usize = 9; // 9 columns per walking row
 const MOVE_SPEED: f32 = 140.0; // pixels per second
 const ANIM_DT: f32 = 0.1; // seconds per frame (~10 FPS)
+const PLAYER_Z: f32 = 20.0;
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
 enum Facing {
@@ -71,7 +72,7 @@ fn spawn_player(
                 index: start_index,
             },
         ),
-        Transform::from_translation(Vec3::ZERO),
+        Transform::from_xyz(0.0, 0.0, PLAYER_Z).with_scale(Vec3::splat(0.8)),
         Player,
         AnimationState {
             facing,

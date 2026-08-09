@@ -3,11 +3,11 @@
 use bevy::prelude::*;
 
 mod components;
+mod map;
 mod plugins;
 mod resources;
 mod styles;
 mod third_party;
-mod utils;
 
 #[bevy_main]
 pub fn main() {
@@ -18,7 +18,7 @@ pub fn main() {
 /// modules directly.
 mod prelude {
     pub use super::*;
-    pub use {components::*, plugins::*, resources::*, styles::*, utils::*};
+    pub use {components::*, plugins::*, resources::*, styles::*};
 }
 
 pub struct AppPlugin;

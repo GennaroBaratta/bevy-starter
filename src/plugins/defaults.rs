@@ -1,10 +1,13 @@
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
-const BACKGROUND_COLOR: Color = Color::srgb(0.1, 0.6, 0.6);
+use crate::map::map_pixel_dimensions;
+
+const BACKGROUND_COLOR: Color = Color::srgb(0.015, 0.02, 0.04);
 
 // Sets up the default plugins like windows, assets, etc
 
 pub(crate) fn plugin(app: &mut App) {
+    let map_size = map_pixel_dimensions();
     app.insert_resource(ClearColor(BACKGROUND_COLOR))
         .add_plugins(
             DefaultPlugins
@@ -15,11 +18,12 @@ pub(crate) fn plugin(app: &mut App) {
                     meta_check: AssetMetaCheck::Never,
                     ..default()
                 })
+                .set(ImagePlugin::default_nearest())
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        title: "Bevy game".into(),
+                        title: "Neon WFC District".into(),
                         resizable: false,
-                        resolution: (800, 600).into(),
+                        resolution: (map_size.x as u32, map_size.y as u32).into(),
                         canvas: Some("#bevy".to_owned()),
                         desired_maximum_frame_latency: core::num::NonZero::new(1u32),
                         fit_canvas_to_parent: true,

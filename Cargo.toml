@@ -8,10 +8,15 @@ publish = false
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name = "starter-desktop"
+path = "src/main.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 bevy = { version = "0.19", default-features = false, features = ["2d", "ui"] }
+bevy_procedural_tilemaps = "0.4.0"
 # Temporary until Avian merges 0.19 changes
 avian2d = { git = "https://github.com/olukowski/avian.git", branch = "main" }
 # Temporary until bevy_enchanced_input merges 0.19 changes
@@ -24,6 +29,7 @@ tracing = { version = "0.1", features = ["max_level_debug", "release_max_level_w
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 getrandom = { version = "0.4", features = ["wasm_js"] }
+getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
 
 [features]
 default = [
