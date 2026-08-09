@@ -26,6 +26,7 @@ rand = { version = "0.10.2", features = ["thread_rng"] }
 log = { version = "*", features = ["max_level_debug", "release_max_level_error"] }
 # Compile low-severity logs out of web builds for performance.
 tracing = { version = "0.1", features = ["max_level_debug", "release_max_level_warn"] }
+bevy_procedural_tilemaps = "0.4.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 getrandom = { version = "0.4", features = ["wasm_js"] }
@@ -113,3 +114,12 @@ inherits = "release"
 opt-level = "s"
 # Strip all debugging information from the binary to slightly reduce file size.
 strip = "debuginfo"
+
+
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/mold"]
+
+[target.android]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/mold"]
