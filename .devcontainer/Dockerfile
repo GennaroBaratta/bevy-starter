@@ -1,7 +1,17 @@
 FROM mcr.microsoft.com/devcontainers/rust:2-1-trixie
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends clang curl mold openjdk-21-jdk-headless unzip \
+    && apt-get install -y --no-install-recommends \
+        clang \
+        curl \
+        libasound2-dev \
+        libudev-dev \
+        libwayland-dev \
+        libxkbcommon-dev \
+        mold \
+        openjdk-21-jdk-headless \
+        pkg-config \
+        unzip \
     && rm -rf /var/lib/apt/lists/*
 
 ENV ANDROID_HOME=/opt/android-sdk

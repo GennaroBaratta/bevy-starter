@@ -44,7 +44,7 @@ fn atlas_index_for(facing: Facing, frame: usize) -> usize {
         Facing::Down => 10,
         Facing::Right => 11,
     };
-    row * ATLAS_COLUMNS + frame
+    row * ATLAS_COLUMNS + frame.min(WALK_FRAMES - 1)
 }
 
 fn spawn_player(
