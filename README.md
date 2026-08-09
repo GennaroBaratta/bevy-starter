@@ -38,7 +38,13 @@ Connect one Android device with USB debugging enabled, then run:
 
 On Linux, connect the device before creating or rebuilding the dev container so
 Docker can mount `/dev/bus/usb`. Accept the USB-debugging authorization prompt
-on the device, then confirm it appears with `adb devices`.
+on the device, then confirm it appears with `adb devices`. If you are using
+Docker Desktop through WSL 2, attach the USB device to that WSL distribution
+first; Docker cannot see a device that is only attached to Windows.
+
+The Android watcher checks ADB before building. A device listed as
+`unauthorized` must be unlocked so you can accept its authorization prompt; a
+device listed as `offline` should be reconnected or have ADB restarted.
 
 With Android's **Wait for Debugger** enabled, start the watcher and JDB together:
 
@@ -49,6 +55,10 @@ With Android's **Wait for Debugger** enabled, start the watcher and JDB together
 The first build is slow. After that, `cargo-watch` watches `src`, `assets`, and
 the Cargo manifests; each change rebuilds with `cargo-ndk`, installs the debug
 APK, and launches it on the connected device. Press `Ctrl+C` to stop watching.
+
+After changing `.devcontainer/Dockerfile`, rebuild the dev container. Its Linux
+packages include the native Wayland, keyboard, audio, and device libraries used
+by Bevy's default native platform support.
 
 Depending on if you are building a 2D or 3D game you can set your Bevy features
 accordingly in `Cargo.toml` to reduce compile times. For 2D games you can use:

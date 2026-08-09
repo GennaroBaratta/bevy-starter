@@ -45,6 +45,9 @@ const childEnvironment = {
   ANDROID_SDK_ROOT: sdkRoot,
 };
 
+const adbName = process.platform === "win32" ? "adb.exe" : "adb";
+const adb = executable([join(sdkRoot, "platform-tools", adbName)], adbName);
+
 function executable(candidates: Array<string | undefined>, name: string): string {
   for (const candidate of candidates) {
     if (!candidate) continue;
@@ -73,6 +76,49 @@ function run(command: string, args: string[], stdio: "inherit" | "pipe" = "inher
   return spawnSync(command, args, { encoding: "utf8", env: childEnvironment, stdio });
 }
 
+function requireAndroidDevice(): void {
+  const result = run(adb, ["devices"], "pipe");
+  if (result.status !== 0) {
+    const details = result.stderr.trim();
+    throw new Error(
+      `Could not query ADB.${details ? `\n${details}` : ""}`,
+    );
+  }
+
+  const devices = result.stdout
+    .split(/\r?\n/)
+    .slice(1)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [serial, state] = line.split(/\s+/, 2);
+      return { serial, state };
+    });
+
+  if (devices.some(({ state }) => state === "device")) return;
+
+  const unauthorized = devices.filter(({ state }) => state === "unauthorized");
+  if (unauthorized.length > 0) {
+    throw new Error(
+      `Android device ${unauthorized.map(({ serial }) => serial).join(", ")} is not authorized. ` +
+      "Unlock it and accept the USB debugging prompt, then run this command again.",
+    );
+  }
+
+  const offline = devices.filter(({ state }) => state === "offline");
+  if (offline.length > 0) {
+    throw new Error(
+      `Android device ${offline.map(({ serial }) => serial).join(", ")} is offline. ` +
+      "Reconnect it (or restart ADB), then run this command again.",
+    );
+  }
+
+  throw new Error(
+    "No Android device is connected. Connect a device with USB debugging enabled or start an emulator, " +
+    "confirm it appears in `adb devices`, then run this command again.",
+  );
+}
+
 function startWatcher(): ChildProcess {
   return spawn(
     "cargo",
@@ -95,8 +141,6 @@ function wait(milliseconds: number): Promise<void> {
 }
 
 async function watchWithDebugger(): Promise<number> {
-  const adbName = process.platform === "win32" ? "adb.exe" : "adb";
-  const adb = executable([join(sdkRoot, "platform-tools", adbName)], adbName);
   const jdb = executable([process.env.JAVA_HOME && join(process.env.JAVA_HOME, "bin", "jdb")], "jdb");
   const watcher = startWatcher();
   let forwardedPort = "";
@@ -145,6 +189,8 @@ async function watchWithDebugger(): Promise<number> {
 }
 
 async function main(): Promise<number> {
+  requireAndroidDevice();
+
   if (debuggerEnabled) return watchWithDebugger();
 
   const watcher = startWatcher();
