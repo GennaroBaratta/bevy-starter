@@ -2,4 +2,4 @@
 //! the `crate::prelude::*` method instead of directly referencing the
 //! `components` module.
 //!
-//! pub(super) mod player;
+pub(super) mod player;

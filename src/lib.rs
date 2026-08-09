@@ -27,8 +27,12 @@ impl Plugin for AppPlugin {
             plugins::fonts::plugin,
             plugins::game::plugin,
             plugins::input::plugin,
-            plugins::physics::plugin,
+            plugins::physics::plugin
         ));
+
+        //components
+        components::player::plugin(app);
+
 
         // Enable dev tools for dev builds.
         #[cfg(feature = "dev")]
