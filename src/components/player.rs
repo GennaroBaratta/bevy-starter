@@ -1,20 +1,22 @@
+use crate::plugins::input::MovementInput;
 use bevy::prelude::*;
 
 #[derive(Component)]
-struct Player;
+pub struct Player;
 
-pub(crate) fn plugin(app: &mut App) {
-    app
-    .add_systems(Startup, 
-        initialize_player)
-    .add_systems(Update, move_player);
+pub struct PlayerPlugin;
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, spawn_player)
+            .add_systems(Update, (move_player));
+    }
 }
 
-fn initialize_player(mut commands: Commands) {
+fn spawn_player(mut commands: Commands) {
     commands.spawn((
         Text2d::new("@"),
         TextFont {
-            font_size: FontSize::Px(12.0),
+            font_size: FontSize::Px(14.0),
             font: default(),
             ..default()
         },
@@ -35,17 +37,13 @@ fn initialize_player(mut commands: Commands) {
     // ));
 }
 
-
 fn move_player(
-    // "Bevy, give me keyboard input"
     input: Res<ButtonInput<KeyCode>>,
-    touches: Res<Touches>,
-    // "Bevy, give me the game timer"
+    movement: Res<MovementInput>,
     time: Res<Time>,
-    // "Bevy, give me the player's position"
     mut player_transform: Single<&mut Transform, With<Player>>,
 ) {
-    let mut direction = Vec2::ZERO;
+    let mut direction = movement.0;
     if input.pressed(KeyCode::ArrowLeft) {
         direction.x -= 1.0;
     }
@@ -58,10 +56,6 @@ fn move_player(
     if input.pressed(KeyCode::ArrowDown) {
         direction.y -= 1.0;
     }
-    touches.iter().for_each(|touch| {
-        let drag = touch.position() - touch.start_position();
-        direction += Vec2::new(drag.x, -drag.y) / 80.0;
-    });
     if direction != Vec2::ZERO {
         let speed = 300.0; // pixels per second
         let delta = direction.clamp_length_max(1.0) * speed * time.delta_secs();

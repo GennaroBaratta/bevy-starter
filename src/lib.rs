@@ -33,10 +33,8 @@ impl Plugin for AppPlugin {
             plugins::game::plugin,
             plugins::input::plugin,
             plugins::physics::plugin,
+            components::player::PlayerPlugin,
         ));
-
-        //components
-        components::player::plugin(app);
 
         // Enable dev tools for dev builds.
         #[cfg(feature = "dev")]
