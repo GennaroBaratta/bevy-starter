@@ -18,26 +18,32 @@ cargo run
 ```
 
 Native development features are enabled by default.
+The dev container uses `clang` with the `mold` linker to keep native Bevy link
+times short.
 
 ### Android development
 
 One-time tools:
 
-```powershell
+```bash
 rustup target add aarch64-linux-android
 cargo install cargo-ndk cargo-watch
 ```
 
 Connect one Android device with USB debugging enabled, then run:
 
-```powershell
-.\android-dev.ps1
+```bash
+./android-dev.ts
 ```
+
+On Linux, connect the device before creating or rebuilding the dev container so
+Docker can mount `/dev/bus/usb`. Accept the USB-debugging authorization prompt
+on the device, then confirm it appears with `adb devices`.
 
 With Android's **Wait for Debugger** enabled, start the watcher and JDB together:
 
-```powershell
-.\android-dev.ps1 -Debugger
+```bash
+./android-dev.ts --debugger
 ```
 
 The first build is slow. After that, `cargo-watch` watches `src`, `assets`, and

@@ -52,7 +52,8 @@ tasks.named('preBuild').configure {
 
 tasks.register('launchDebug', Exec) {
     dependsOn 'installDebug'
-    commandLine "${sdkRoot}/platform-tools/adb.exe", 'shell', 'am', 'start', '-S',
+    def adbName = org.gradle.internal.os.OperatingSystem.current().isWindows() ? 'adb.exe' : 'adb'
+    commandLine "${sdkRoot}/platform-tools/${adbName}", 'shell', 'am', 'start', '-S',
         '-n', 'com.example.bevystarter/.MainActivity'
     outputs.upToDateWhen { false }
 }
