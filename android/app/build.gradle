@@ -1,0 +1,58 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+def rustRoot = rootProject.projectDir.parentFile
+def sdkRoot = System.getenv('ANDROID_HOME') ?: System.getenv('ANDROID_SDK_ROOT')
+
+if (sdkRoot == null) {
+    throw new GradleException('Set ANDROID_HOME or ANDROID_SDK_ROOT to your Android SDK.')
+}
+
+android {
+    namespace 'com.example.bevystarter'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.example.bevystarter'
+        minSdk 31
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += files('../../assets')
+        }
+    }
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.games.activity
+}
+
+tasks.register('cargoBuild', Exec) {
+    workingDir rustRoot
+    inputs.files(fileTree("${rustRoot}/src"), "${rustRoot}/Cargo.toml", "${rustRoot}/Cargo.lock")
+    outputs.file("${projectDir}/src/main/jniLibs/arm64-v8a/libstarter.so")
+    commandLine 'cargo', 'ndk', '-t', 'arm64-v8a', '-P', '31',
+        '-o', "${projectDir}/src/main/jniLibs", 'build', '--profile', 'android-dev', '--lib',
+        '--no-default-features', '--features', 'android'
+}
+
+tasks.named('preBuild').configure {
+    dependsOn 'cargoBuild'
+}
+
+tasks.register('launchDebug', Exec) {
+    dependsOn 'installDebug'
+    commandLine "${sdkRoot}/platform-tools/adb.exe", 'shell', 'am', 'start', '-S',
+        '-n', 'com.example.bevystarter/.MainActivity'
+    outputs.upToDateWhen { false }
+}

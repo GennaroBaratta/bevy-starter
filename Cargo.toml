@@ -5,6 +5,9 @@ edition = "2024"
 license = "LICENSE.txt"
 publish = false
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -27,6 +30,7 @@ default = [
   # Default to a native dev build.
   "dev_native",
 ]
+android = ["bevy/android-game-activity"]
 dev_native = [
   "dev",
   # Enable asset hot reloading for native dev builds.
@@ -56,6 +60,10 @@ nonstandard_macro_braces = "warn"
 # Enable a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
+
+[profile.android-dev]
+inherits = "dev"
+debug = 0
 
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]

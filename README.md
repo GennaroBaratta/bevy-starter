@@ -19,6 +19,31 @@ cargo run
 
 Native development features are enabled by default.
 
+### Android development
+
+One-time tools:
+
+```powershell
+rustup target add aarch64-linux-android
+cargo install cargo-ndk cargo-watch
+```
+
+Connect one Android device with USB debugging enabled, then run:
+
+```powershell
+.\android-dev.ps1
+```
+
+With Android's **Wait for Debugger** enabled, start the watcher and JDB together:
+
+```powershell
+.\android-dev.ps1 -Debugger
+```
+
+The first build is slow. After that, `cargo-watch` watches `src`, `assets`, and
+the Cargo manifests; each change rebuilds with `cargo-ndk`, installs the debug
+APK, and launches it on the connected device. Press `Ctrl+C` to stop watching.
+
 Depending on if you are building a 2D or 3D game you can set your Bevy features
 accordingly in `Cargo.toml` to reduce compile times. For 2D games you can use:
 

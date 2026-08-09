@@ -9,6 +9,11 @@ mod styles;
 mod third_party;
 mod utils;
 
+#[bevy_main]
+pub fn main() {
+    App::new().add_plugins(AppPlugin).run();
+}
+
 /// Use this module instead of importing the `components`, `plugins`, `resources`, and `utils`
 /// modules directly.
 mod prelude {
@@ -27,12 +32,11 @@ impl Plugin for AppPlugin {
             plugins::fonts::plugin,
             plugins::game::plugin,
             plugins::input::plugin,
-            plugins::physics::plugin
+            plugins::physics::plugin,
         ));
 
         //components
         components::player::plugin(app);
-
 
         // Enable dev tools for dev builds.
         #[cfg(feature = "dev")]
