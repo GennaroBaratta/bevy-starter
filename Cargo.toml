@@ -16,6 +16,7 @@ path = "src/main.rs"
 
 [dependencies]
 bevy = { version = "0.19", default-features = false, features = ["2d", "ui"] }
+bevy_common_assets = { version = "0.17", features = ["ron"] }
 bevy_procedural_tilemaps = "0.4.0"
 # Temporary until Avian merges 0.19 changes
 avian2d = { git = "https://github.com/olukowski/avian.git", branch = "main" }
@@ -23,6 +24,7 @@ avian2d = { git = "https://github.com/olukowski/avian.git", branch = "main" }
 bevy_enhanced_input = { git = "https://github.com/simgine/bevy_enhanced_input.git", branch = "bevy-0.19" }
 
 rand = { version = "0.10.2", features = ["thread_rng"] }
+serde = { version = "1.0", features = ["derive"] }
 log = { version = "*", features = ["max_level_debug", "release_max_level_error"] }
 # Compile low-severity logs out of web builds for performance.
 tracing = { version = "0.1", features = ["max_level_debug", "release_max_level_warn"] }

@@ -3,6 +3,11 @@ use bevy::prelude::*;
 #[derive(Resource, Default)]
 pub(crate) struct MovementInput(pub Vec2);
 
+#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) enum InputSystem {
+    UpdateJoystick,
+}
+
 #[derive(Component)]
 struct JoystickBase;
 
@@ -21,7 +26,7 @@ pub(crate) fn plugin(app: &mut App) {
     app.init_resource::<MovementInput>()
         .init_resource::<JoystickTouch>()
         .add_systems(Startup, spawn_joystick)
-        .add_systems(Update, update_joystick);
+        .add_systems(Update, update_joystick.in_set(InputSystem::UpdateJoystick));
 }
 
 fn spawn_joystick(mut commands: Commands) {

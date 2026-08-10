@@ -6,7 +6,7 @@ use bevy_procedural_tilemaps::{
 };
 use std::{collections::HashSet, sync::Arc};
 
-use crate::components::player::Player;
+use crate::{characters::CharacterSystems, components::player::Player};
 
 use super::{
     assets::{load_assets, prepare_tilemap_handles},
@@ -59,7 +59,7 @@ impl Plugin for MapPlugin {
         app.add_systems(Startup, setup_streaming_world).add_systems(
             Update,
             (
-                stream_chunks,
+                stream_chunks.after(CharacterSystems::Update),
                 start_subchunk_generation,
                 advance_chunk_generation,
                 spawn_chunk_nodes,

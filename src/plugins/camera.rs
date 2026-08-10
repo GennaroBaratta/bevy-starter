@@ -1,4 +1,4 @@
-use crate::components::player::Player;
+use crate::{characters::CharacterSystems, components::player::Player};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -7,7 +7,7 @@ pub struct MainCamera;
 
 pub(crate) fn plugin(app: &mut App) {
     app.add_systems(Startup, initialize_camera)
-        .add_systems(Update, follow_player);
+        .add_systems(Update, follow_player.after(CharacterSystems::Update));
 }
 
 fn initialize_camera(mut commands: Commands) {

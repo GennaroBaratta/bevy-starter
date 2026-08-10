@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 
+mod characters;
 mod components;
 mod map;
 mod plugins;
@@ -33,7 +34,7 @@ impl Plugin for AppPlugin {
             plugins::game::plugin,
             plugins::input::plugin,
             plugins::physics::plugin,
-            components::player::PlayerPlugin,
+            characters::CharactersPlugin,
         ));
 
         // Enable dev tools for dev builds.
