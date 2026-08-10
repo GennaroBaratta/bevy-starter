@@ -26,16 +26,21 @@ const SUBGRID_X: u32 = 5;
 const SUBGRID_Y: u32 = 6;
 const SUBGRID_COLUMNS: u32 = GRID_X / SUBGRID_X;
 const SUBGRID_ROWS: u32 = GRID_Y / SUBGRID_Y;
+<<<<<<< HEAD
 const STREAM_RADIUS: i32 = 3;
 // Tune this budget on the slowest supported browser.
-const GENERATION_STEPS_PER_FRAME: usize = 32;
+const GENERATION_STEPS_PER_FRAME: usize = 8;
+=======
+// Tune these budgets on the slowest supported browser.
+const GENERATION_STEPS_PER_FRAME: usize = 8;
+const MAX_STREAMED_ENTITIES_PER_FRAME: usize = 128;
+>>>>>>> f8643e0bad7cd594c2765e91cce856930109e343
 
 type ChunkGenerator = Generator<Cartesian3D, CartesianGrid<Cartesian3D>>;
 
 #[derive(Component)]
 struct MapChunk {
     coordinate: IVec2,
-    layers: [Entity; GRID_Z as usize],
     tiles: [Vec<Option<TileData>>; GRID_Z as usize],
     completed_subchunks: u32,
 }
@@ -43,7 +48,6 @@ struct MapChunk {
 #[derive(Component)]
 struct MapSubChunk {
     chunk: Entity,
-    coordinate: IVec2,
     origin: UVec2,
 }
 
@@ -68,8 +72,8 @@ impl Plugin for MapPlugin {
             Update,
             (
                 stream_chunks, //.after(CharacterSystems::Update),
-                start_subchunk_generation,
                 advance_chunk_generation,
+                start_subchunk_generation,
             )
                 .chain(),
         );
@@ -109,52 +113,33 @@ fn stream_chunks(
                 }
                 let chunk = center + IVec2::new(x, y);
                 if world.generated_chunks.insert(chunk) {
-                    spawn_chunk(&mut commands, chunk, &world.tileset);
+                    spawn_chunk(&mut commands, chunk);
                 }
             }
         }
     }
 }
 
-fn spawn_chunk(commands: &mut Commands, chunk: IVec2, tileset: &Handle<Image>) {
+fn spawn_chunk(commands: &mut Commands, chunk: IVec2) {
     // ponytail: 5x6 WFC slices cap WASM setup work; share edge constraints if seams become visible.
     // ponytail: visited chunks stay loaded; despawn distant chunks if memory growth becomes measurable.
     let map_size = map_pixel_dimensions();
     let center = chunk.as_vec2() * map_size;
 
-    let parent = commands
-        .spawn((
-            ChunkBuildQueue::default(),
-            Transform::from_xyz(
-                center.x - map_size.x / 2.0,
-                center.y - map_size.y / 2.0,
-                0.0,
-            ),
-        ))
-        .id();
-    let chunk_size = UVec2::new(GRID_X, GRID_Y);
-    let tile_count = chunk_size.element_product() as usize;
-    let layers = std::array::from_fn(|layer| {
-        commands
-            .spawn((
-                ChildOf(parent),
-                TilemapChunk {
-                    chunk_size,
-                    tile_display_size: UVec2::splat(TILE_SIZE as u32),
-                    tileset: tileset.clone(),
-                    alpha_mode: AlphaMode2d::Blend,
-                },
-                TilemapChunkTileData(vec![None; tile_count]),
-                Transform::from_xyz(map_size.x / 2.0, map_size.y / 2.0, layer as f32 + 0.5),
-            ))
-            .id()
-    });
-    commands.entity(parent).insert(MapChunk {
-        coordinate: chunk,
-        layers,
-        tiles: std::array::from_fn(|_| vec![None; tile_count]),
-        completed_subchunks: 0,
-    });
+    let tile_count = (GRID_X * GRID_Y) as usize;
+    commands.spawn((
+        MapChunk {
+            coordinate: chunk,
+            tiles: std::array::from_fn(|_| vec![None; tile_count]),
+            completed_subchunks: 0,
+        },
+        ChunkBuildQueue::default(),
+        Transform::from_xyz(
+            center.x - map_size.x / 2.0,
+            center.y - map_size.y / 2.0,
+            0.0,
+        ),
+    ));
 }
 
 fn start_subchunk_generation(
@@ -162,7 +147,12 @@ fn start_subchunk_generation(
     world: Res<StreamingWorld>,
     player: Single<&Transform, With<Player>>,
     mut chunks: Query<(Entity, &MapChunk, &mut ChunkBuildQueue)>,
+    generators: Query<(), With<ChunkGenerator>>,
 ) {
+    if !generators.is_empty() {
+        return;
+    }
+
     let player_chunk = chunk_at(player.translation.truncate());
     let Some((parent, map_chunk, mut queue)) = chunks.iter_mut().min_by_key(|(_, chunk, _)| {
         let offset = chunk.coordinate - player_chunk;
@@ -178,7 +168,6 @@ fn start_subchunk_generation(
     commands.spawn((
         MapSubChunk {
             chunk: parent,
-            coordinate: map_chunk.coordinate,
             origin: UVec2::new(subgrid_x * SUBGRID_X, subgrid_y * SUBGRID_Y),
         },
         ChildOf(parent),
@@ -209,7 +198,6 @@ fn build_generator(
 fn advance_chunk_generation(
     mut commands: Commands,
     world: Res<StreamingWorld>,
-    player: Single<&Transform, With<Player>>,
     mut chunks: Query<(
         Entity,
         &MapSubChunk,
@@ -217,15 +205,8 @@ fn advance_chunk_generation(
         &mut ChunkGenerator,
     )>,
     mut map_chunks: Query<&mut MapChunk>,
-    mut layers: Query<&mut TilemapChunkTileData>,
 ) {
-    let player_chunk = chunk_at(player.translation.truncate());
-    let Some((entity, subchunk, grid, mut generator)) =
-        chunks.iter_mut().min_by_key(|(_, subchunk, _, _)| {
-            let offset = subchunk.coordinate - player_chunk;
-            offset.x.abs() + offset.y.abs()
-        })
-    else {
+    let Some((entity, subchunk, grid, mut generator)) = chunks.iter_mut().next() else {
         return;
     };
 
@@ -251,12 +232,23 @@ fn advance_chunk_generation(
                 );
                 map_chunk.completed_subchunks += 1;
                 if map_chunk.completed_subchunks == SUBGRID_COLUMNS * SUBGRID_ROWS {
-                    let layer_entities = map_chunk.layers;
-                    for (layer, tiles) in layer_entities.into_iter().zip(&mut map_chunk.tiles) {
-                        layers
-                            .get_mut(layer)
-                            .expect("map layer should remain alive with its region")
-                            .0 = std::mem::take(tiles);
+                    let map_size = map_pixel_dimensions();
+                    for (layer, tiles) in map_chunk.tiles.iter_mut().enumerate() {
+                        commands.spawn((
+                            ChildOf(subchunk.chunk),
+                            TilemapChunk {
+                                chunk_size: UVec2::new(GRID_X, GRID_Y),
+                                tile_display_size: UVec2::splat(TILE_SIZE as u32),
+                                tileset: world.tileset.clone(),
+                                alpha_mode: AlphaMode2d::Blend,
+                            },
+                            TilemapChunkTileData(std::mem::take(tiles)),
+                            Transform::from_xyz(
+                                map_size.x / 2.0,
+                                map_size.y / 2.0,
+                                layer as f32 + 0.5,
+                            ),
+                        ));
                     }
                 }
                 commands.entity(entity).despawn();
@@ -366,10 +358,7 @@ mod tests {
 
         app.update();
         assert_eq!(chunk_count(&mut app), diameter * diameter);
-        assert_eq!(
-            component_count::<TilemapChunk>(&mut app),
-            diameter * diameter * GRID_Z as usize
-        );
+        assert_eq!(component_count::<TilemapChunk>(&mut app), 0);
 
         app.world_mut()
             .get_mut::<Transform>(player)
@@ -396,7 +385,7 @@ mod tests {
         let player = app.world_mut().spawn((Player, Transform::default())).id();
 
         let mut initial_completed = false;
-        for _ in 0..60 {
+        for _ in 0..160 {
             app.update();
             if streaming_settled(&mut app, 1) {
                 initial_completed = true;
@@ -429,7 +418,7 @@ mod tests {
             .x = map_pixel_dimensions().x;
 
         let mut completed = false;
-        for _ in 0..60 {
+        for _ in 0..160 {
             app.update();
             if streaming_settled(&mut app, 2) {
                 completed = true;
@@ -474,8 +463,8 @@ mod tests {
                 Update,
                 (
                     stream_chunks,
-                    start_subchunk_generation,
                     advance_chunk_generation,
+                    start_subchunk_generation,
                 )
                     .chain(),
             );
