@@ -18,7 +18,8 @@ ENV ANDROID_HOME=/opt/android-sdk
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV ANDROID_NDK_HOME=/opt/android-sdk/ndk/27.2.12479018
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-ENV PATH=/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:${PATH}
+ENV PNPM_HOME=/home/vscode/.local/share/pnpm
+ENV PATH=${PNPM_HOME}/bin:/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:${PATH}
 
 COPY install-android-sdk.sh /tmp/install-android-sdk.sh
 RUN bash /tmp/install-android-sdk.sh \
