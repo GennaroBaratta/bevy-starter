@@ -86,7 +86,7 @@ codegen-backend = true
 [profile.dev]
 # Removed for now until fixed in MacOS
 # @see https://github.com/bevyengine/bevy/issues/20785
-codegen-backend = "cranelift"
+# codegen-backend = "cranelift"
 debug = "line-tables-only"
 
 [profile.dev.package."*"]
