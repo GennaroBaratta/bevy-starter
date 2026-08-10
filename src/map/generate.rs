@@ -1,4 +1,5 @@
 use bevy::{
+    platform::time::Instant,
     prelude::*,
     sprite_render::{AlphaMode2d, TileData, TileOrientation, TilemapChunk, TilemapChunkTileData},
 };
@@ -9,7 +10,7 @@ use bevy_procedural_tilemaps::{
         rules::Rules,
     },
 };
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use crate::{characters::CharacterSystems, components::player::Player};
 
@@ -26,15 +27,10 @@ const SUBGRID_X: u32 = 5;
 const SUBGRID_Y: u32 = 6;
 const SUBGRID_COLUMNS: u32 = GRID_X / SUBGRID_X;
 const SUBGRID_ROWS: u32 = GRID_Y / SUBGRID_Y;
-<<<<<<< HEAD
 const STREAM_RADIUS: i32 = 3;
 // Tune this budget on the slowest supported browser.
 const GENERATION_STEPS_PER_FRAME: usize = 8;
-=======
-// Tune these budgets on the slowest supported browser.
-const GENERATION_STEPS_PER_FRAME: usize = 8;
-const MAX_STREAMED_ENTITIES_PER_FRAME: usize = 128;
->>>>>>> f8643e0bad7cd594c2765e91cce856930109e343
+const GENERATION_TIME_BUDGET: Duration = Duration::from_millis(2);
 
 type ChunkGenerator = Generator<Cartesian3D, CartesianGrid<Cartesian3D>>;
 
@@ -154,7 +150,7 @@ fn start_subchunk_generation(
     }
 
     let player_chunk = chunk_at(player.translation.truncate());
-    let Some((parent, map_chunk, mut queue)) = chunks.iter_mut().min_by_key(|(_, chunk, _)| {
+    let Some((parent, _, mut queue)) = chunks.iter_mut().min_by_key(|(_, chunk, _)| {
         let offset = chunk.coordinate - player_chunk;
         offset.x.abs() + offset.y.abs()
     }) else {
@@ -210,6 +206,7 @@ fn advance_chunk_generation(
         return;
     };
 
+    let started = Instant::now();
     for _ in 0..GENERATION_STEPS_PER_FRAME {
         match generator.select_and_propagate() {
             Ok(GenerationStatus::Ongoing) => {}
@@ -259,6 +256,9 @@ fn advance_chunk_generation(
                 *generator = build_generator(world.rules.clone(), grid.clone());
                 break;
             }
+        }
+        if started.elapsed() >= GENERATION_TIME_BUDGET {
+            break;
         }
     }
 }
