@@ -26,8 +26,9 @@ const SUBGRID_X: u32 = 5;
 const SUBGRID_Y: u32 = 6;
 const SUBGRID_COLUMNS: u32 = GRID_X / SUBGRID_X;
 const SUBGRID_ROWS: u32 = GRID_Y / SUBGRID_Y;
-// Tune this budget on the slowest supported browser.
-const GENERATION_STEPS_PER_FRAME: usize = 16;
+// Tune these budgets on the slowest supported browser.
+const GENERATION_STEPS_PER_FRAME: usize = 8;
+const MAX_STREAMED_ENTITIES_PER_FRAME: usize = 128;
 
 type ChunkGenerator = Generator<Cartesian3D, CartesianGrid<Cartesian3D>>;
 
