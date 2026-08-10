@@ -46,7 +46,7 @@ pub fn prepare_tilemap_handles(
     asset_server: &AssetServer,
     atlas_layouts: &mut Assets<TextureAtlasLayout>,
 ) -> TilemapHandles {
-    let image = asset_server.load("tile_layers/cyberpunk_tilemap.png");
+    let image = asset_server.load("tile_layers/cyberpunk_tilemap_v2.png");
     let mut layout = TextureAtlasLayout::new_empty(TILEMAP.atlas_size());
     for index in 0..TILEMAP.sprites.len() {
         layout.add_texture(TILEMAP.sprite_rect(index));
