@@ -1,15 +1,20 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    sprite_render::{AlphaMode2d, TileData, TileOrientation, TilemapChunk, TilemapChunkTileData},
+};
 use bevy_procedural_tilemaps::{
     prelude::*,
-    proc_gen::generator::{model::ModelInstance, rules::Rules},
-    spawner::spawn_node,
+    proc_gen::generator::{
+        model::{ModelInstance, ModelRotation},
+        rules::Rules,
+    },
 };
 use std::{collections::HashSet, sync::Arc};
 
 use crate::{characters::CharacterSystems, components::player::Player};
 
 use super::{
-    assets::{load_assets, prepare_tilemap_handles},
+    assets::{TileAssets, load_assets, load_tileset},
     rules::build_world,
 };
 
@@ -17,38 +22,36 @@ pub const GRID_X: u32 = 25;
 pub const GRID_Y: u32 = 18;
 pub const TILE_SIZE: f32 = 32.0;
 const GRID_Z: u32 = 5;
-const NODE_SIZE: Vec3 = Vec3::new(TILE_SIZE, TILE_SIZE, 1.0);
 const SUBGRID_X: u32 = 5;
 const SUBGRID_Y: u32 = 6;
 const SUBGRID_COLUMNS: u32 = GRID_X / SUBGRID_X;
 const SUBGRID_ROWS: u32 = GRID_Y / SUBGRID_Y;
-// Tune these budgets on the slowest supported browser.
-const GENERATION_STEPS_PER_FRAME: usize = 64;
-const MAX_STREAMED_ENTITIES_PER_FRAME: usize = 128;
+// Tune this budget on the slowest supported browser.
+const GENERATION_STEPS_PER_FRAME: usize = 16;
 
 type ChunkGenerator = Generator<Cartesian3D, CartesianGrid<Cartesian3D>>;
 
 #[derive(Component)]
-struct MapChunk;
+struct MapChunk {
+    layers: [Entity; GRID_Z as usize],
+}
 
 #[derive(Component)]
-struct MapSubChunk;
+struct MapSubChunk {
+    origin: UVec2,
+    layers: [Entity; GRID_Z as usize],
+}
 
 #[derive(Component, Default)]
 struct ChunkBuildQueue {
     next: u32,
 }
 
-#[derive(Component)]
-struct ChunkSpawnQueue {
-    nodes: Vec<ModelInstance>,
-    next: usize,
-}
-
 #[derive(Resource)]
 struct StreamingWorld {
     rules: Arc<Rules<Cartesian3D>>,
-    spawner: NodesSpawner<Sprite>,
+    tileset: Handle<Image>,
+    assets: TileAssets,
     generated_chunks: HashSet<IVec2>,
 }
 
@@ -62,7 +65,6 @@ impl Plugin for MapPlugin {
                 stream_chunks.after(CharacterSystems::Update),
                 start_subchunk_generation,
                 advance_chunk_generation,
-                spawn_chunk_nodes,
             )
                 .chain(),
         );
@@ -73,22 +75,17 @@ pub fn map_pixel_dimensions() -> Vec2 {
     Vec2::new(TILE_SIZE * GRID_X as f32, TILE_SIZE * GRID_Y as f32)
 }
 
-fn setup_streaming_world(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-) {
+fn setup_streaming_world(mut commands: Commands, asset_server: Res<AssetServer>) {
     let (asset_definitions, models, socket_collection) = build_world();
     let rules = RulesBuilder::new_cartesian_3d(models, socket_collection)
         .with_rotation_axis(Direction::ZForward)
         .build()
         .expect("cyberpunk tile rules should be valid");
-    let handles = prepare_tilemap_handles(&asset_server, &mut atlas_layouts);
-    let model_assets = load_assets(&handles, asset_definitions);
 
     commands.insert_resource(StreamingWorld {
         rules: Arc::new(rules),
-        spawner: NodesSpawner::new(model_assets, NODE_SIZE, Vec3::ONE).with_z_offset_from_y(true),
+        tileset: load_tileset(&asset_server),
+        assets: load_assets(asset_definitions),
         generated_chunks: HashSet::new(),
     });
 }
@@ -108,23 +105,42 @@ fn stream_chunks(
     let map_size = map_pixel_dimensions();
     let center = chunk.as_vec2() * map_size;
 
-    commands.spawn((
-        MapChunk,
-        ChunkBuildQueue::default(),
-        Transform::from_xyz(
-            center.x - map_size.x / 2.0,
-            center.y - map_size.y / 2.0,
-            0.0,
-        ),
-    ));
+    let parent = commands
+        .spawn((
+            ChunkBuildQueue::default(),
+            Transform::from_xyz(
+                center.x - map_size.x / 2.0,
+                center.y - map_size.y / 2.0,
+                0.0,
+            ),
+        ))
+        .id();
+    let chunk_size = UVec2::new(GRID_X, GRID_Y);
+    let tile_count = chunk_size.element_product() as usize;
+    let layers = std::array::from_fn(|layer| {
+        commands
+            .spawn((
+                ChildOf(parent),
+                TilemapChunk {
+                    chunk_size,
+                    tile_display_size: UVec2::splat(TILE_SIZE as u32),
+                    tileset: world.tileset.clone(),
+                    alpha_mode: AlphaMode2d::Blend,
+                },
+                TilemapChunkTileData(vec![None; tile_count]),
+                Transform::from_xyz(map_size.x / 2.0, map_size.y / 2.0, layer as f32 + 0.5),
+            ))
+            .id()
+    });
+    commands.entity(parent).insert(MapChunk { layers });
 }
 
 fn start_subchunk_generation(
     mut commands: Commands,
     world: Res<StreamingWorld>,
-    mut chunks: Query<(Entity, &mut ChunkBuildQueue), With<MapChunk>>,
+    mut chunks: Query<(Entity, &MapChunk, &mut ChunkBuildQueue)>,
 ) {
-    let Some((parent, mut queue)) = chunks.iter_mut().next() else {
+    let Some((parent, chunk, mut queue)) = chunks.iter_mut().next() else {
         return;
     };
 
@@ -133,16 +149,13 @@ fn start_subchunk_generation(
     let grid = CartesianGrid::new_cartesian_3d(SUBGRID_X, SUBGRID_Y, GRID_Z, false, false, false);
     let generator = build_generator(world.rules.clone(), grid.clone());
     commands.spawn((
-        MapSubChunk,
+        MapSubChunk {
+            origin: UVec2::new(subgrid_x * SUBGRID_X, subgrid_y * SUBGRID_Y),
+            layers: chunk.layers,
+        },
         ChildOf(parent),
-        Transform::from_xyz(
-            subgrid_x as f32 * SUBGRID_X as f32 * TILE_SIZE,
-            subgrid_y as f32 * SUBGRID_Y as f32 * TILE_SIZE,
-            0.0,
-        ),
         grid,
         generator,
-        world.spawner.clone(),
     ));
 
     queue.next += 1;
@@ -168,13 +181,16 @@ fn build_generator(
 fn advance_chunk_generation(
     mut commands: Commands,
     world: Res<StreamingWorld>,
-    mut chunks: Query<
-        (Entity, &CartesianGrid<Cartesian3D>, &mut ChunkGenerator),
-        With<MapSubChunk>,
-    >,
+    mut chunks: Query<(
+        Entity,
+        &MapSubChunk,
+        &CartesianGrid<Cartesian3D>,
+        &mut ChunkGenerator,
+    )>,
+    mut layers: Query<&mut TilemapChunkTileData>,
 ) {
     // ponytail: one pending chunk advances per frame; add a FIFO if teleports can queue chunks.
-    let Some((entity, grid, mut generator)) = chunks.iter_mut().next() else {
+    let Some((entity, subchunk, grid, mut generator)) = chunks.iter_mut().next() else {
         return;
     };
 
@@ -187,11 +203,9 @@ fn advance_chunk_generation(
                     .expect("completed generator should contain grid data")
                     .iter()
                     .copied()
-                    .collect();
-                commands
-                    .entity(entity)
-                    .remove::<ChunkGenerator>()
-                    .insert(ChunkSpawnQueue { nodes, next: 0 });
+                    .collect::<Vec<_>>();
+                apply_generated_tiles(grid, &nodes, subchunk, &world.assets, &mut layers);
+                commands.entity(entity).despawn();
                 break;
             }
             Err(error) => {
@@ -203,40 +217,60 @@ fn advance_chunk_generation(
     }
 }
 
-fn spawn_chunk_nodes(
-    mut commands: Commands,
-    mut chunks: Query<
-        (
-            Entity,
-            &CartesianGrid<Cartesian3D>,
-            &NodesSpawner<Sprite>,
-            &mut ChunkSpawnQueue,
-        ),
-        With<MapSubChunk>,
-    >,
+fn apply_generated_tiles(
+    grid: &CartesianGrid<Cartesian3D>,
+    nodes: &[ModelInstance],
+    subchunk: &MapSubChunk,
+    assets: &TileAssets,
+    layers: &mut Query<&mut TilemapChunkTileData>,
 ) {
-    let Some((entity, grid, spawner, mut queue)) = chunks.iter_mut().next() else {
-        return;
-    };
-
-    let mut examined_nodes = 0;
-    let mut spawned_entities = 0;
-    while queue.next < queue.nodes.len() && examined_nodes < MAX_STREAMED_ENTITIES_PER_FRAME {
-        let model = queue.nodes[queue.next];
-        let asset_count = spawner.assets.get(&model.model_index).map_or(0, Vec::len);
-        if spawned_entities > 0 && spawned_entities + asset_count > MAX_STREAMED_ENTITIES_PER_FRAME
-        {
-            break;
+    let mut updates: [Vec<(usize, TileData)>; GRID_Z as usize] =
+        std::array::from_fn(|_| Vec::new());
+    for (node_index, model) in nodes.iter().enumerate() {
+        let position = grid.pos_from_index(node_index);
+        let Some(model_assets) = assets.get(model.model_index) else {
+            continue;
+        };
+        for asset in model_assets {
+            let x = i64::from(subchunk.origin.x + position.x) + i64::from(asset.grid_offset.dx);
+            let y = i64::from(subchunk.origin.y + position.y) + i64::from(asset.grid_offset.dy);
+            let z = i64::from(position.z) + i64::from(asset.grid_offset.dz);
+            if x < 0
+                || x >= i64::from(GRID_X)
+                || y < 0
+                || y >= i64::from(GRID_Y)
+                || z < 0
+                || z >= i64::from(GRID_Z)
+            {
+                continue;
+            }
+            updates[z as usize].push((
+                y as usize * GRID_X as usize + x as usize,
+                TileData {
+                    tileset_index: asset.tileset_index,
+                    orientation: tile_orientation(model.rotation),
+                    ..default()
+                },
+            ));
         }
-
-        spawn_node(&mut commands, entity, grid, spawner, &model, queue.next);
-        queue.next += 1;
-        examined_nodes += 1;
-        spawned_entities += asset_count;
     }
 
-    if queue.next == queue.nodes.len() {
-        commands.entity(entity).remove::<ChunkSpawnQueue>();
+    for (entity, updates) in subchunk.layers.into_iter().zip(updates) {
+        let mut tile_data = layers
+            .get_mut(entity)
+            .expect("map layer should remain alive with its region");
+        for (index, tile) in updates {
+            tile_data[index] = Some(tile);
+        }
+    }
+}
+
+fn tile_orientation(rotation: ModelRotation) -> TileOrientation {
+    match rotation {
+        ModelRotation::Rot0 => TileOrientation::Default,
+        ModelRotation::Rot90 => TileOrientation::Rotate90,
+        ModelRotation::Rot180 => TileOrientation::Rotate180,
+        ModelRotation::Rot270 => TileOrientation::Rotate270,
     }
 }
 
@@ -285,42 +319,19 @@ mod tests {
     }
 
     #[test]
-    fn entering_a_new_region_spawns_one_chunk_once() {
-        let mut app = App::new();
-        let (_, models, sockets) = build_world();
-        let rules = RulesBuilder::new_cartesian_3d(models, sockets)
-            .with_rotation_axis(Direction::ZForward)
-            .build()
-            .unwrap();
-        app.insert_resource(StreamingWorld {
-            rules: Arc::new(rules),
-            spawner: NodesSpawner::new(ModelsAssets::new(), NODE_SIZE, Vec3::ONE),
-            generated_chunks: HashSet::new(),
-        })
-        .add_systems(Update, stream_chunks);
-        let player = app.world_mut().spawn((Player, Transform::default())).id();
+    fn streaming_batches_each_region_into_five_tilemap_layers() {
+        use bevy::sprite_render::{
+            TilemapChunkMaterial, TilemapChunkMeshCache, TilemapChunkPlugin,
+        };
 
-        app.update();
-        app.update();
-        assert_eq!(chunk_count(&mut app), 1);
-
-        app.world_mut()
-            .get_mut::<Transform>(player)
-            .unwrap()
-            .translation
-            .x = map_pixel_dimensions().x;
-        app.update();
-
-        assert_eq!(chunk_count(&mut app), 2);
-    }
-
-    #[test]
-    fn streaming_work_is_spread_across_frames() {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
             .add_plugins(AssetPlugin::default())
             .init_asset::<Image>()
-            .init_asset::<TextureAtlasLayout>()
+            .init_asset::<Mesh>()
+            .init_asset::<TilemapChunkMaterial>()
+            .init_resource::<TilemapChunkMeshCache>()
+            .add_plugins(TilemapChunkPlugin)
             .add_plugins(MapPlugin);
         let player = app.world_mut().spawn((Player, Transform::default())).id();
 
@@ -333,46 +344,37 @@ mod tests {
             }
         }
         assert!(initial_completed);
+        assert_eq!(component_count::<TilemapChunk>(&mut app), GRID_Z as usize);
+        assert_eq!(component_count::<Sprite>(&mut app), 0);
+        let initial_tile_count = rendered_tile_count(&mut app);
+        assert!(initial_tile_count > 0);
 
-        let initial_sprite_count = sprite_count(&mut app);
         app.world_mut()
             .get_mut::<Transform>(player)
             .unwrap()
             .translation
             .x = map_pixel_dimensions().x;
 
-        let mut previous_sprite_count = initial_sprite_count;
         let mut completed = false;
-        for frame in 0..160 {
+        for _ in 0..160 {
             app.update();
-            let sprite_count = sprite_count(&mut app);
-            let spawned_this_frame = sprite_count - previous_sprite_count;
-            assert!(
-                spawned_this_frame <= MAX_STREAMED_ENTITIES_PER_FRAME,
-                "frame {frame} spawned {spawned_this_frame} entities"
-            );
-            previous_sprite_count = sprite_count;
-
             if streaming_settled(&mut app, 2) {
                 completed = true;
                 break;
             }
         }
         assert!(completed);
-
-        assert!(sprite_count(&mut app) > initial_sprite_count);
+        assert_eq!(
+            component_count::<TilemapChunk>(&mut app),
+            (2 * GRID_Z) as usize
+        );
+        assert_eq!(component_count::<Sprite>(&mut app), 0);
+        assert!(rendered_tile_count(&mut app) > initial_tile_count);
     }
 
     fn chunk_count(app: &mut App) -> usize {
         app.world_mut()
             .query_filtered::<Entity, With<MapChunk>>()
-            .iter(app.world())
-            .count()
-    }
-
-    fn sprite_count(app: &mut App) -> usize {
-        app.world_mut()
-            .query_filtered::<Entity, With<Sprite>>()
             .iter(app.world())
             .count()
     }
@@ -384,10 +386,17 @@ mod tests {
             .count()
     }
 
+    fn rendered_tile_count(app: &mut App) -> usize {
+        app.world_mut()
+            .query::<&TilemapChunkTileData>()
+            .iter(app.world())
+            .map(|tiles| tiles.iter().flatten().count())
+            .sum()
+    }
+
     fn streaming_settled(app: &mut App, expected_chunks: usize) -> bool {
         chunk_count(app) == expected_chunks
             && component_count::<ChunkBuildQueue>(app) == 0
             && component_count::<ChunkGenerator>(app) == 0
-            && component_count::<ChunkSpawnQueue>(app) == 0
     }
 }

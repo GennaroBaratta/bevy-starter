@@ -1,5 +1,8 @@
-use bevy::{ecs::system::EntityCommands, prelude::*};
-use bevy_procedural_tilemaps::prelude::*;
+use bevy::{
+    image::{ImageArrayLayout, ImageLoaderSettings},
+    prelude::*,
+};
+use bevy_procedural_tilemaps::prelude::GridDelta;
 
 use super::tilemap::TILEMAP;
 
@@ -7,8 +10,6 @@ use super::tilemap::TILEMAP;
 pub struct SpawnableAsset {
     sprite_name: &'static str,
     grid_offset: GridDelta,
-    offset: Vec3,
-    components_spawner: fn(&mut EntityCommands),
 }
 
 impl SpawnableAsset {
@@ -16,8 +17,6 @@ impl SpawnableAsset {
         Self {
             sprite_name,
             grid_offset: GridDelta::new(0, 0, 0),
-            offset: Vec3::ZERO,
-            components_spawner: |_| {},
         }
     }
 
@@ -27,57 +26,41 @@ impl SpawnableAsset {
     }
 }
 
-#[derive(Clone)]
-pub struct TilemapHandles {
-    image: Handle<Image>,
-    layout: Handle<TextureAtlasLayout>,
+#[derive(Clone, Copy)]
+pub struct TileAsset {
+    pub tileset_index: u16,
+    pub grid_offset: GridDelta,
 }
 
-impl TilemapHandles {
-    fn sprite(&self, atlas_index: usize) -> Sprite {
-        Sprite::from_atlas_image(
-            self.image.clone(),
-            TextureAtlas::from(self.layout.clone()).with_index(atlas_index),
-        )
-    }
+pub type TileAssets = Vec<Vec<TileAsset>>;
+
+pub fn load_tileset(asset_server: &AssetServer) -> Handle<Image> {
+    let tile_size = TILEMAP.tile_size();
+    asset_server
+        .load_builder()
+        .with_settings(move |settings: &mut ImageLoaderSettings| {
+            settings.array_layout = Some(ImageArrayLayout::GridSize {
+                tile_width_pixels: tile_size.x,
+                tile_height_pixels: tile_size.y,
+            });
+        })
+        .load("tile_layers/cyberpunk_tilemap_v2.png")
 }
 
-pub fn prepare_tilemap_handles(
-    asset_server: &AssetServer,
-    atlas_layouts: &mut Assets<TextureAtlasLayout>,
-) -> TilemapHandles {
-    let image = asset_server.load("tile_layers/cyberpunk_tilemap_v2.png");
-    let mut layout = TextureAtlasLayout::new_empty(TILEMAP.atlas_size());
-    for index in 0..TILEMAP.sprites.len() {
-        layout.add_texture(TILEMAP.sprite_rect(index));
-    }
-
-    TilemapHandles {
-        image,
-        layout: atlas_layouts.add(layout),
-    }
-}
-
-pub fn load_assets(
-    handles: &TilemapHandles,
-    definitions: Vec<Vec<SpawnableAsset>>,
-) -> ModelsAssets<Sprite> {
-    let mut models_assets = ModelsAssets::new();
-    for (model_index, assets) in definitions.into_iter().enumerate() {
-        for asset in assets {
-            let atlas_index = TILEMAP
-                .sprite_index(asset.sprite_name)
-                .unwrap_or_else(|| panic!("Unknown atlas sprite '{}'", asset.sprite_name));
-            models_assets.add(
-                model_index,
-                ModelAsset {
-                    assets_bundle: handles.sprite(atlas_index),
+pub fn load_assets(definitions: Vec<Vec<SpawnableAsset>>) -> TileAssets {
+    definitions
+        .into_iter()
+        .map(|assets| {
+            assets
+                .into_iter()
+                .map(|asset| TileAsset {
+                    tileset_index: TILEMAP
+                        .sprite_index(asset.sprite_name)
+                        .unwrap_or_else(|| panic!("Unknown atlas sprite '{}'", asset.sprite_name))
+                        as u16,
                     grid_offset: asset.grid_offset,
-                    world_offset: asset.offset,
-                    spawn_commands: asset.components_spawner,
-                },
-            );
-        }
-    }
-    models_assets
+                })
+                .collect()
+        })
+        .collect()
 }

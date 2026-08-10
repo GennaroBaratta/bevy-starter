@@ -1,9 +1,7 @@
-use bevy::math::{URect, UVec2};
+use bevy::math::UVec2;
 
 pub struct TilemapDefinition {
     tile_size: u32,
-    columns: u32,
-    rows: u32,
     pub sprites: &'static [&'static str],
 }
 
@@ -12,28 +10,13 @@ impl TilemapDefinition {
         UVec2::splat(self.tile_size)
     }
 
-    pub const fn atlas_size(&self) -> UVec2 {
-        UVec2::new(self.columns * self.tile_size, self.rows * self.tile_size)
-    }
-
     pub fn sprite_index(&self, name: &str) -> Option<usize> {
         self.sprites.iter().position(|sprite| *sprite == name)
-    }
-
-    pub fn sprite_rect(&self, index: usize) -> URect {
-        let index = index as u32;
-        let min = UVec2::new(
-            index % self.columns * self.tile_size,
-            index / self.columns * self.tile_size,
-        );
-        URect::from_corners(min, min + self.tile_size())
     }
 }
 
 pub const TILEMAP: TilemapDefinition = TilemapDefinition {
     tile_size: 32,
-    columns: 8,
-    rows: 8,
     sprites: &[
         "asphalt",
         "cyan_center",
@@ -107,9 +90,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_named_sprite_fits_inside_the_atlas() {
+    fn tileset_has_64_named_32px_tiles() {
         assert_eq!(TILEMAP.sprites.len(), 64);
+        assert_eq!(TILEMAP.tile_size(), UVec2::splat(32));
         assert!(TILEMAP.sprites.iter().all(|name| !name.is_empty()));
-        assert_eq!(TILEMAP.sprite_rect(63).max, TILEMAP.atlas_size());
     }
 }
