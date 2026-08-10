@@ -1,5 +1,6 @@
 [toolchain]
 channel = "nightly"
+targets = ["wasm32-unknown-unknown"]
 # Removed for now until fixed in MacOS
 # @see https://github.com/bevyengine/bevy/issues/20785
 components = ["rustc-codegen-cranelift-preview"]

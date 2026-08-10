@@ -81,6 +81,11 @@ opt-level = 3
 [profile.dev.package.wgpu-types]
 debug-assertions = false
 
+# Trunk uses this profile for development Wasm builds. Its LLVM codegen backend
+# is configured in `.cargo/config.toml` because Cranelift does not support Wasm.
+[profile.web]
+inherits = "dev"
+
 # The default profile is optimized for Wasm builds because
 # that's what [Trunk reads](https://github.com/trunk-rs/trunk/issues/605).
 # Optimize for size in the wasm-release profile to reduce load times and bandwidth usage on web.
@@ -115,5 +120,4 @@ inherits = "release"
 opt-level = "s"
 # Strip all debugging information from the binary to slightly reduce file size.
 strip = "debuginfo"
-
 
