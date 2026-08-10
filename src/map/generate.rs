@@ -135,6 +135,7 @@ fn spawn_chunk(commands: &mut Commands, chunk: IVec2) {
             center.y - map_size.y / 2.0,
             0.0,
         ),
+        Visibility::default(),
     ));
 }
 
@@ -395,6 +396,13 @@ mod tests {
         }
         assert!(initial_completed);
         assert_eq!(component_count::<TilemapChunk>(&mut app), GRID_Z as usize);
+        assert_eq!(
+            app.world_mut()
+                .query_filtered::<Entity, (With<MapChunk>, With<Visibility>)>()
+                .iter(app.world())
+                .count(),
+            1
+        );
         assert_eq!(component_count::<Sprite>(&mut app), 0);
         let initial_tile_count = rendered_tile_count(&mut app);
         assert!(initial_tile_count > 0);
